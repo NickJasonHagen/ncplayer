@@ -33,7 +33,21 @@ impl Ncplayer{
         self.instants.insert(thisid.clone(),start_time);
         thisid
     }
+    pub fn duration(&mut self,id:&str)->Duration{
+        if let Some(ret) = self.durations.get(id){
+            return ret.to_owned();
+        }
+        Duration::from_secs(0)
+    }
+    pub fn elapsed(&mut self,id: &str)->Duration{
+        if let Some(elapsed_time) = self.instants.get(id) {
+            if let Some(duration) = self.durations.get(id) {
+                Duration::from(elapsed_time.elapsed());
+            }
+        }
+       Duration::from_secs(0)
 
+    }
     pub fn runtimers(&mut self){
         // use this inside your apps loops, this will handle the sounds by killing the threads when
         if self.allsoundids == "" {
@@ -136,7 +150,7 @@ impl Ncplayer{
         }
     }
 }
-
+//
 // fn main() {
 //     let mut play = nscriptsound::new();
 //     play.playfile("./boom.mp3");
@@ -154,6 +168,6 @@ impl Ncplayer{
 //     play.runtimers();
 //     }
 // }
-
+//
 
 
