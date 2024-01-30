@@ -1,7 +1,7 @@
 
 use crate::*;
 
-struct Ncplayer{
+pub struct Ncplayer{
     threadssenders: HashMap<String,mpsc::Sender<String>>,
     durations: HashMap<String,Duration>,
     instants: HashMap<String,Instant>,
@@ -209,7 +209,7 @@ impl Ncplayer{
         }
     }
 
-    fn stop(&mut self,id:&str){
+    pub fn stop(&mut self,id:&str){
         // used to stop active sounds,
         if let Some(sender) = self.threadssenders.get(id) {
             sender.send("stop".to_string());
