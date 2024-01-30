@@ -7,6 +7,7 @@ struct Ncplayer{
     instants: HashMap<String,Instant>,
     allsoundids: String,
     soundint:usize,
+    currentvolume: f32,
 }
 
 impl Ncplayer{
@@ -16,7 +17,10 @@ impl Ncplayer{
             durations: HashMap::new(),
             instants: HashMap::new(),
             allsoundids:  String::new(),
-            soundint: 0
+            soundint: 0,
+            currentvolume: 1.0,
+
+
         }
     }
 
@@ -39,15 +43,15 @@ impl Ncplayer{
         }
         Duration::from_secs(0)
     }
-    pub fn elapsed(&mut self,id: &str)->Duration{
-        if let Some(elapsed_time) = self.instants.get(id) {
-            if let Some(duration) = self.durations.get(id) {
-                Duration::from(elapsed_time.elapsed());
-            }
-        }
-       Duration::from_secs(0)
-
-    }
+    // pub fn elapsed(&mut self,id: &str)->Duration{
+    //     if let Some(elapsed_time) = self.instants.get(id) {
+    //         if let Some(duration) = self.durations.get(id) {
+    //             Duration::from(elapsed_time.elapsed());
+    //         }
+    //     }
+    //    Duration::from_secs(0)
+    //
+    // }
     pub fn runtimers(&mut self){
         // use this inside your apps loops, this will handle the sounds by killing the threads when
         if self.allsoundids == "" {
@@ -127,10 +131,30 @@ impl Ncplayer{
                 }
                 let received_message = rx.recv().unwrap();
                 match received_message.as_str(){
-                    "stop" => {
-                      break;
+                    "mute" =>{
+                        sink.set_volume(0.0);
                     }
-                    _ =>{}
+                    "unmute" =>{
+                        sink.set_volume(1.0);
+                    }
+                    "stop" => {
+
+                        break;
+                    }
+                    _ =>{
+                        if received_message.as_str().contains("volume>"){
+                            match split(received_message.as_str(),">")[1].parse::<f32>(){
+                                Ok(r) =>{
+                                    sink.set_volume(r);
+
+                                }
+                                Err(_) =>{
+
+                                }
+                            };
+                        }
+                    }
+
                 }
                 thread::sleep(Duration::from_millis(10));
             }
@@ -139,6 +163,50 @@ impl Ncplayer{
         let thisid = self.create_soundid();
         self.threadssenders.insert(thisid.clone().to_string(),tx);
         thisid
+    }
+
+    pub fn setvolume(&mut self,id:&str,vol: f32){
+        match self.threadssenders.get(id) {
+            Some(sender)  => {
+                match sender.send("volume>".to_string()+&vol.to_string()){
+                    Ok(_)=>{},
+                    Err(_)=>{}
+                };
+                self.currentvolume = vol;
+
+            }
+            None =>{
+
+            }
+        }
+    }
+
+    pub fn mute(&mut self,id: &str){
+
+        match self.threadssenders.get(id) {
+            Some(sender)  => {
+                match sender.send("volume>0.0".to_string()){
+                    Ok(_)=>{},
+                    Err(_)=>{}
+                };
+                self.currentvolume = 0.0;
+            }
+            None =>{
+
+            }
+        }
+    }
+    pub fn unmute(&mut self,id: &str){
+        match self.threadssenders.get(id) {
+            Some(sender) =>{
+                match sender.send("volume>".to_string()+&self.currentvolume.to_string()){
+                    Ok(_)=>{},
+                    Err(_)=>{}
+                };
+
+            }
+            None =>{}
+        }
     }
 
     fn stop(&mut self,id:&str){
@@ -150,6 +218,12 @@ impl Ncplayer{
         }
     }
 }
+fn split<'a>(s: &'a str, p: &str) -> Vec<&'a str> {
+    let r: Vec<&str> = s.split(p).collect();
+    //println!("{:?}", &r);
+    return r;
+}
+
 //
 // fn main() {
 //     let mut play = nscriptsound::new();
